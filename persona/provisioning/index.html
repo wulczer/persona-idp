@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Provisioning for wulczer.org</title>
+    <meta charset="utf-8">
+    <script src="https://login.persona.org/provisioning_api.js"></script>
+  </head>
+  <body>
+    <script>
+      var checkSession = function(email, success, failure) {
+          var req = new XMLHttpRequest();
+          var url  ='/persona/auth/has-session/';
+
+          req.open('GET', url + '?email=' + encodeURIComponent(email), true);
+          req.onreadystatechange = function() {
+              if (req.readyState !== 4)
+                  return;
+
+              req.status === 200 ? success() : failure();
+          }
+          req.send();
+      }
+
+      var generateCertificate = function(email, publicKey, certDuration, callback) {
+          var req = new XMLHttpRequest();
+          var url  ='/persona/auth/certificate/';
+
+          var data = 'email=' + encodeURIComponent(email);
+          data += '&publicKey=' + encodeURIComponent(publicKey);
+          data += '&certDuration=' + encodeURIComponent(certDuration);
+
+          req.open('POST', url, true);
+          req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+          req.onreadystatechange = function() {
+              if (req.readyState !== 4) {
+                  return;
+              }
+
+              if (req.status !== 200) {
+                  callback(null);
+                  return;
+              }
+
+              callback(req.responseText);
+          }
+          req.send(data);
+      }
+
+      var success = function(email, certDuration) {
+          navigator.id.genKeyPair(function(publicKey) {
+              generateCertificate(email, publicKey, certDuration, function (certificate) {
+                  if (!certificate) {
+                      navigator.id.raiseProvisioningFailure('user is not authenticated as target user');
+                      return;
+                  }
+                  navigator.id.registerCertificate(certificate);
+              });
+          });
+      }
+
+      var failure = function() {
+          navigator.id.raiseProvisioningFailure('user is not authenticated as target user');
+      }
+
+      navigator.id.beginProvisioning(function(email, certDuration) {
+          checkSession(email, function() { success(email, certDuration) }, failure);
+      });
+    </script>
+  </body>
+</html>

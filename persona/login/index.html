@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Log in to wulczer.org</title>
+    <meta charset="utf-8">
+    <script src="https://login.persona.org/authentication_api.js"></script>
+    <style>
+      form { display: none; }
+    </style>
+  </head>
+  <body>
+    <form action="/persona/auth/login/" method="post">
+      <input type="text" name="email">
+      <input type="password" name="password">
+      <input type="submit" value="Login">        
+    </form>
+
+    <script>
+      var checkSession = function(email, success, failure) {
+          var req = new XMLHttpRequest();
+          var url  ='/persona/auth/has-session/';
+
+          req.open('GET', url + '?email=' + encodeURIComponent(email), true);
+          req.onreadystatechange = function() {
+              if (req.readyState !== 4)
+                  return;
+
+              req.status === 200 ? success() : failure();
+          }
+          req.send();
+      }
+
+      navigator.id.beginAuthentication(function(email) {
+          checkSession(
+              email,
+              function() {
+                  navigator.id.completeAuthentication();
+              },
+              function() {
+                  document.getElementsByTagName('form')[0].style.display = 'block';
+              });
+      });
+    </script>
+  </body>
+</html>
